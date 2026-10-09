@@ -17,8 +17,11 @@ isolated Android service host.
 - Android: `arm64-v8a`, API 29 or newer.
 - Desktop JVM: experimental. The client resolves and starts a local `@qvac/sdk`
   worker.
-- A Kotlin 2.3 or newer compiler. The artifacts depend on
-  [`bare-rpc-kotlin`](https://github.com/holepunchto/bare-rpc-kotlin), which is
+- A Kotlin 2.3 or newer compiler. The artifacts depend on Holepunch's
+  [`bare-rpc-kotlin`](https://github.com/holepunchto/bare-rpc-kotlin),
+  [`bare-stow-host-kotlin`](https://github.com/holepunchto/bare-stow-host-kotlin)
+  and, on Android,
+  [`bare-kit-kotlin`](https://github.com/holepunchto/bare-kit-kotlin), which are
   compiled with Kotlin 2.4.
 
 Kotlin/Native targets are not published.
@@ -69,7 +72,7 @@ unzip qvac-sdk-android-llm-0.23.0-maven.zip -d qvac-maven-repository
 
 <Step>
 Declare the extracted directory as a Maven repository, next to JitPack, which
-serves the `bare-rpc-kotlin` dependency the archive does not include:
+serves the Holepunch libraries the archive does not include:
 
 ```kotlin
 // settings.gradle.kts
@@ -78,7 +81,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         exclusiveContent {
-            forRepository { maven("https://jitpack.io") } // bare-rpc-kotlin
+            forRepository { maven("https://jitpack.io") } // Holepunch's Kotlin libraries
             filter { includeGroupByRegex("com\\.github\\.holepunchto\\..*") }
         }
         maven { url = uri("/absolute/path/to/qvac-maven-repository") }

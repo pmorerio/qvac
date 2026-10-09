@@ -103,6 +103,8 @@ Add the following peer dependencies to your `package.json`:
   }
 }
 ```
+
+With pnpm or bun's isolated linker, also add `bare-stow-runtime` and `bare-stow-host`, which the generated worker files import. Yarn needs `nodeLinker: node-modules` in `.yarnrc.yml`, because the bundler reads packages from `node_modules`.
 </Step>
 
 <Step>

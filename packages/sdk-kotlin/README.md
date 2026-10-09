@@ -50,10 +50,10 @@ configuration, or build it from the command line:
 ./gradlew :android-example:assembleDebug
 ```
 
-The first build runs `npm install` to fetch the exact-pinned `@qvac/sdk` and
-BareKit dependencies, bundles the worker for `android-arm64`, links the
-configured native addons,
-and packages the BareKit runtime, worker asset, and addons into the APK.
+The first build runs `npm install` to fetch the exact-pinned `@qvac/sdk`, then
+has bare-stow write the worker for `android-arm64` as a Kotlin module: the
+harness that starts it, the bundle and the configured native addons, linked.
+The APK packages that module with the Bare Kit runtime from `bare-kit-kotlin`.
 The sample is intentionally restricted to `arm64-v8a`, API 29+. It is a native
 Jetpack Compose app whose launcher is an executable Feature Lab with independent
 and run-all buttons for completion, vision, OCR, transcription, TTS, embeddings,
@@ -102,7 +102,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         exclusiveContent {
-            forRepository { maven("https://jitpack.io") } // bare-rpc-kotlin
+            forRepository { maven("https://jitpack.io") } // Holepunch's Kotlin libraries
             filter { includeGroupByRegex("com\\.github\\.holepunchto\\..*") }
         }
         maven { url = uri("/absolute/path/to/extracted-qvac-repository") }
@@ -124,7 +124,8 @@ artifacts. The archive includes the selected runtime and the Kotlin client
 modules it depends on, but not the Holepunch libraries from JitPack. Verify
 downloads against the release's `qvac-sdk-kotlin-<version>-SHA256SUMS` asset.
 
-The artifacts depend on `bare-rpc-kotlin`, which is compiled with Kotlin 2.4,
+The artifacts depend on Holepunch's `bare-rpc-kotlin`, `bare-stow-host-kotlin`
+and, on Android, `bare-kit-kotlin`. They are compiled with Kotlin 2.4,
 so the consuming project needs a Kotlin 2.3 or newer compiler. AGP 9's built-in
 Kotlin compiles with the Kotlin Gradle plugin version on the classpath, and
 bundles 2.2 when none is declared, so such a project adds the plugin without
@@ -286,7 +287,8 @@ Desktop JVM worker hosting is experimental. The client resolves the same worker
 tiers as Python: explicit paths, `QVAC_WORKER_PATH`/`QVAC_BARE_PATH`,
 `QVAC_SDK_DIR`, a local `node_modules`, the versioned managed cache, and a global
 npm installation. It requires a worker whose version matches this client and
-runs it over a loopback channel. Android uses its embedded BareKit worker and is
+runs it as bare-sidecar's Bare runtime with the SDK's TCP shim, which connects
+back to a loopback port. Android uses its embedded BareKit worker and is
 unaffected.
 
 ```kotlin
@@ -313,8 +315,9 @@ version on first use; cached packages are re-checked. The transport launches
 `bare` and creates a loopback-only TCP endpoint. The worker authenticates with a
 per-session token passed in its environment, and the transport rejects any
 other local connection before a frame is exchanged. A worker whose `@qvac/sdk`
-`package.json` does not declare `"qvacIpcAuthentication": "token-v1"` is refused;
-`connect(..., authenticated = false)` is the only way to run one.
+`package.json` does not declare `"qvacIpcAuthentication": "token-v1"` is refused.
+`connect(command = ..., authenticated = false)` runs a worker command of your own
+without the token.
 
 Worker stdout/stderr are continuously drained into `transport.recentWorkerLogs`
 (a bounded 16K-character tail); `isWorkerAlive` reports the child process state.
@@ -486,9 +489,12 @@ is large by design; edit the exporter/generator, never generated DTOs.
 ## Bare-RPC
 
 Both transports speak bare-rpc through Holepunch's
-[`bare-rpc-kotlin`](https://github.com/holepunchto/bare-rpc-kotlin), published
-on JitPack, so a consuming project lists the JitPack repository next to Maven
-Central as the snippets above do. A frame over 16 MiB fails the call it belongs
+[`bare-rpc-kotlin`](https://github.com/holepunchto/bare-rpc-kotlin), inside
+bare-stow's framing from
+[`bare-stow-host-kotlin`](https://github.com/holepunchto/bare-stow-host-kotlin),
+which also carries the worker's `ready`, errors and exit code and the client's
+`terminate`. Both are published on JitPack, so a consuming project lists the
+JitPack repository next to Maven Central as the snippets above do. A frame over 16 MiB fails the call it belongs
 to with `QvacWorkerProtocolException` and leaves the connection usable: the
 transport splits frames before the library sees them, because the library
 would fail the whole connection. A JSON line over 16 MiB, including one split
