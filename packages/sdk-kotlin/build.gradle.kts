@@ -302,9 +302,11 @@ kotlin {
             api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
             api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
             // Its RemoteException reaches callers, so it is part of the API.
-            api("com.github.holepunchto.bare-rpc-kotlin:bare-rpc-kotlin:v0.3.0")
+            api("com.github.holepunchto.bare-rpc-kotlin:bare-rpc-kotlin:v0.4.0")
+            // Its WorkerError reaches callers, so it is part of the API.
+            api("com.github.holepunchto.bare-stow-host-kotlin:bare-stow-host-kotlin:v0.1.1")
             // bare-rpc-kotlin's own codec dependency, used to read frame headers.
-            implementation("com.github.holepunchto.compact-encoding-kotlin:compact-encoding-kotlin:v0.2.0")
+            implementation("com.github.holepunchto.compact-encoding-kotlin:compact-encoding-kotlin:v0.3.0")
         }
 
         commonTest.dependencies {

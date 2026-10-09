@@ -5,7 +5,6 @@ import path from 'node:path'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import link from 'bare-link'
 import { platformPackageForHost } from './platform-package.mjs'
 
 const projectRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
@@ -17,7 +16,10 @@ const generatedRoot = process.env.QVAC_KOTLIN_GENERATED_ROOT
   ? path.resolve(process.env.QVAC_KOTLIN_GENERATED_ROOT)
   : path.join(projectRoot, 'android-barekit', 'build', 'generated', 'qvac', 'aio')
 const assetsDirectory = path.join(generatedRoot, 'assets', 'qvac')
-const addonsDirectory = path.join(generatedRoot, 'addons')
+// bare-stow's `bare-kit` harness module for Kotlin: the harness, the bundle as
+// an asset and the linked addons, which the Gradle build adds to the profile.
+const workerDirectory = path.join(generatedRoot, 'worker')
+const workerPackage = 'io.tether.qvac.sdk.barekit.worker'
 const qvacConfig = JSON.parse(await fs.readFile(configPath, 'utf8'))
 const profileName = process.env.QVAC_KOTLIN_PROFILE ?? path.basename(configPath, '.json')
 
@@ -44,14 +46,13 @@ const capabilities = [
 
 await fs.rm(generatedRoot, { recursive: true, force: true })
 await fs.mkdir(assetsDirectory, { recursive: true })
-await fs.mkdir(addonsDirectory, { recursive: true })
 
 // Bundle the checkout's packages/sdk. The worker build owns compiling it.
 const bundleSdkPath = ensureWorkspaceSdk(sdkRoot)
 const modulesRoot = bundleSdkPath ?? projectRoot
 // The bundler of the SDK being bundled: the installed @qvac/sdk can predate the workspace
 // SDK's built-in plugins, and bundles one it does not know as a custom plugin.
-const { bundleSdk, formatVerifyBundleResult, hasErrors, verifyBundle } = await import(
+const { bundleSdk } = await import(
   bundleSdkPath
     ? pathToFileURL(path.join(bundleSdkPath, 'dist', 'src', 'commands', 'index.js')).href
     : '@qvac/sdk/commands'
@@ -66,48 +67,18 @@ await ensureHostPrebuilds('android-arm64', modulesRoot)
 // differ in the monorepo, where the worker comes from ../sdk but the Kotlin
 // runtime's own node_modules is a separate tree; for a standalone consumer they
 // are the same. ensureHostPrebuilds installs into this tree too.
-//
-// Pack from modulesRoot: bare-pack keys files by their path from the cwd, and
-// from here the workspace SDK would be keyed `/../sdk/...`, outside the bundle
-// root, where the worklet cannot read it.
-const workingDirectory = process.cwd()
-process.chdir(modulesRoot)
-let bundle
-try {
-  bundle = await bundleSdk({
-    projectRoot: modulesRoot,
-    configPath,
-    ...(bundleSdkPath !== undefined && { sdkPath: bundleSdkPath }),
-    hosts: ['android-arm64'],
-    defer: ['react-native-bare-kit', '@qvac/sdk/worker.mobile.bundle'],
-    quiet: true
-  })
-} finally {
-  process.chdir(workingDirectory)
-}
-
-const verification = await verifyBundle({
+const bundle = await bundleSdk({
   projectRoot: modulesRoot,
-  addonsSource: bundle.bundlePath,
+  configPath,
+  ...(bundleSdkPath !== undefined && { sdkPath: bundleSdkPath }),
+  target: 'bare-kit',
+  language: 'kotlin',
+  languageOptions: { package: workerPackage },
+  outputDir: workerDirectory,
   hosts: ['android-arm64'],
-  configPath
+  quiet: true
 })
 
-if (hasErrors(verification)) {
-  throw new Error(formatVerifyBundleResult(verification))
-}
-
-const bundleModule = await fs.readFile(bundle.bundlePath, 'utf8')
-const bundleExportPrefix = 'module.exports = '
-if (!bundleModule.startsWith(bundleExportPrefix)) {
-  throw new Error('bare-pack produced an unsupported mobile bundle module')
-}
-
-const workerBundle = JSON.parse(bundleModule.slice(bundleExportPrefix.length))
-if (typeof workerBundle !== 'string') {
-  throw new Error('bare-pack mobile bundle did not export a string')
-}
-await fs.writeFile(path.join(assetsDirectory, 'worker.bundle'), workerBundle)
 // The SDK package the bundle came from: the workspace checkout, or the
 // installed @qvac/sdk when this package is checked out on its own.
 const sdkPackageRoot = bundleSdkPath ?? packageDir(projectRoot, '@qvac/sdk')
@@ -116,34 +87,25 @@ await Promise.all([
   fs.copyFile(path.join(sdkPackageRoot, 'NOTICE'), path.join(assetsDirectory, 'NOTICE'))
 ])
 
-const manifest = JSON.parse(await fs.readFile(bundle.manifestPath, 'utf8'))
 const sdkPackage = JSON.parse(await fs.readFile(path.join(sdkPackageRoot, 'package.json'), 'utf8'))
-const addons = Array.isArray(manifest.addons) ? manifest.addons : []
-
-// bare-link 4 links the addons the worker entry's module graph loads on the
-// host, resolving each meta's per-platform split package (installed above by
-// ensureHostPrebuilds) in one pass. It rewrites existing DT_NEEDED entries
-// rather than adding one per installed addon, so the split @qvac/fabric layout
-// links a single libqvac__fabric-android-arm64.
-const linkedResources = new Set()
-for await (const resource of link(bundle.entryPaths.worker, {
-  hosts: ['android-arm64'],
-  out: addonsDirectory
-})) {
-  linkedResources.add(path.resolve(String(resource)))
-  console.log(`Linked ${resource}`)
-}
+const addons = bundle.addons
 
 async function sha256(filePath) {
   return createHash('sha256').update(await fs.readFile(filePath)).digest('hex')
 }
 
 const linkedAddons = []
-for (const resource of [...linkedResources].sort()) {
-  linkedAddons.push({
-    name: path.basename(resource),
-    sha256: await sha256(resource)
-  })
+const linkedRoot = path.join(workerDirectory, 'src', 'main', 'addons')
+const linkedFiles = await fs.readdir(linkedRoot, { recursive: true, withFileTypes: true })
+for (const file of linkedFiles.filter((entry) => entry.isFile()).sort(byPath)) {
+  const filePath = path.join(file.parentPath, file.name)
+  linkedAddons.push({ name: path.relative(linkedRoot, filePath), sha256: await sha256(filePath) })
+}
+
+function byPath(a, b) {
+  const left = path.join(a.parentPath, a.name)
+  const right = path.join(b.parentPath, b.name)
+  return left < right ? -1 : left > right ? 1 : 0
 }
 
 // Record the resolved @qvac versions so a rebuild of the same profile is
@@ -168,7 +130,7 @@ await fs.writeFile(
       sdkVersion: sdkPackage.version,
       capabilities,
       plugins: qvacConfig.plugins ?? [],
-      workerSha256: createHash('sha256').update(workerBundle).digest('hex'),
+      workerSha256: await sha256(bundle.bundlePath),
       resolvedDependencies,
       addons: linkedAddons
     },
@@ -181,8 +143,12 @@ console.log(`Prepared QVAC Android runtime with ${addons.length} addon(s)`)
 
 function ensureWorkspaceSdk(sdkDir) {
   if (!fsSync.existsSync(path.join(sdkDir, 'package.json'))) return undefined
-  const worker = path.join(sdkDir, 'dist', 'src', 'worker', 'index.js')
-  if (!fsSync.existsSync(worker)) {
+  const built = [
+    path.join(sdkDir, 'dist', 'src', 'worker', 'index.js'),
+    path.join(sdkDir, 'dist', 'src', 'worker', 'tcp-shim.js'),
+    path.join(sdkDir, 'dist', 'src', 'commands', 'bundle', 'targets.js')
+  ]
+  if (!built.every((file) => fsSync.existsSync(file))) {
     execFileSync('python3', [path.join(sdkDir, '..', 'sdk-python', 'scripts', 'build_worker.py')], {
       stdio: 'inherit'
     })
@@ -227,7 +193,7 @@ function platformPackageForInstalledMeta(metaName, host) {
  * Install the per-platform packages every split addon under `modulesRoot`
  * names for `host` in its `#host-addon` map, at the meta's installed version.
  * Consumers declare the mobile ones as optional peers, which npm does not
- * install. Installed into `modulesRoot`, which bare-pack's lookup from any
+ * install. Installed into `modulesRoot`, which the bundler's lookup from any
  * package under it reaches, and not recorded in package.json.
  */
 async function ensureHostPrebuilds(host, modulesRoot) {
@@ -245,7 +211,7 @@ async function ensureHostPrebuilds(host, modulesRoot) {
 
 /**
  * The @qvac packages reachable from `modulesRoot`'s dependencies, found the way
- * bare-pack resolves them: up the (unresolved) symlinked path, so a pnpm
+ * the bundler resolves them: up the (unresolved) symlinked path, so a pnpm
  * layout's transitive addons (fabric under its consumers) are included.
  */
 async function installedQvacPackages(modulesRoot) {

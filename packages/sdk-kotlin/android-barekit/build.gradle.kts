@@ -19,7 +19,6 @@ mavenPublishing {
         validateDeployment = com.vanniktech.maven.publish.DeploymentValidation.PUBLISHED)
 }
 val runtimeRoot = rootProject.layout.projectDirectory
-val bareKitRoot = runtimeRoot.dir("node_modules/react-native-bare-kit/android/libs/bare-kit")
 data class RuntimeProfile(val name: String, val configFile: String, val artifactId: String, val pomName: String)
 val allRuntimeProfiles = listOf(
     RuntimeProfile("aio", "qvac.config.json", "qvac-sdk-android", "QVAC SDK for Android"),
@@ -89,14 +88,16 @@ android {
     }
 
     sourceSets {
-        getByName("main") {
-            jniLibs.directories.add(bareKitRoot.dir("jni").asFile.absolutePath)
-        }
+        // Each profile carries the module bare-stow writes for its worker:
+        // the harness, the bundle as an asset and the linked addons.
         runtimeProfiles.forEach { profile ->
             getByName(profile.name) {
                 val generatedRuntime = layout.buildDirectory.dir("generated/qvac/${profile.name}").get()
+                val worker = generatedRuntime.dir("worker/src/main")
                 assets.directories.add(generatedRuntime.dir("assets").asFile.absolutePath)
-                jniLibs.directories.add(generatedRuntime.dir("addons").asFile.absolutePath)
+                assets.directories.add(worker.dir("assets").asFile.absolutePath)
+                kotlin.directories.add(worker.dir("kotlin").asFile.absolutePath)
+                jniLibs.directories.add(worker.dir("addons").asFile.absolutePath)
             }
         }
     }
@@ -160,8 +161,8 @@ val buildWorkspaceSdk by tasks.registering(Exec::class) {
     }
 }
 
-// Every profile bundles through the same packages/sdk/qvac/worker.bundle.*
-// files, so the prepare tasks must not run concurrently.
+// Every profile bundles from the same packages/sdk/qvac/worker.entry.mjs, so
+// the prepare tasks must not run concurrently.
 abstract class QvacRuntimeBundleLock : BuildService<BuildServiceParameters.None>
 val runtimeBundleLock = gradle.sharedServices.registerIfAbsent("qvacRuntimeBundleLock", QvacRuntimeBundleLock::class) {
     maxParallelUsages.set(1)
@@ -202,7 +203,11 @@ val prepareRuntimeTasks = runtimeProfiles.associateWith { profile ->
 tasks.configureEach {
     runtimeProfiles.forEach { profile ->
         val capitalized = profile.name.replaceFirstChar(Char::uppercase)
-        if (name.startsWith("merge$capitalized") || name.startsWith("package$capitalized")) {
+        if (
+            name.startsWith("merge$capitalized") ||
+            name.startsWith("package$capitalized") ||
+            name.startsWith("compile$capitalized")
+        ) {
             dependsOn(prepareRuntimeTasks.getValue(profile))
         }
     }
@@ -210,7 +215,9 @@ tasks.configureEach {
 
 dependencies {
     api(project(":"))
-    api(files(bareKitRoot.file("classes.jar")).builtBy(npmCi))
+    // The dependencies of bare-stow's `bare-kit` harness module for Kotlin.
+    api("com.github.holepunchto.bare-kit-kotlin:bare-kit-kotlin:v0.1.1")
+    api("com.github.holepunchto.bare-stow-host-kotlin:bare-stow-host-kotlin:v0.1.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 }
 
