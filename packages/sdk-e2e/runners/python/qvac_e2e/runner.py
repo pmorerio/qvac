@@ -77,7 +77,7 @@ async def main() -> int:
     # the same binary. Without that the comparison is meaningless: a difference could
     # just as well be a different engine build.
     async with Client() as client:
-        resources = ResourceManager(client.transport, _log)
+        resources = ResourceManager(client, _log)
         interpreter = Interpreter(resources, _log)
 
         _write({"type": "ready", "protocol": PROTOCOL_VERSION})
