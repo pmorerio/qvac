@@ -18,9 +18,9 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import to.holepunch.barerpc.ConnectionClosedException
-import to.holepunch.barerpc.Message
-import to.holepunch.barerpc.Messages
+import to.holepunch.bare.rpc.ConnectionClosedException
+import to.holepunch.bare.rpc.Message
+import to.holepunch.bare.rpc.Messages
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
@@ -129,6 +129,7 @@ class JvmBareRpcTransportTest {
             withTimeout(5_000) {
                 first.await()
                 workerJob.await()
+                launch(Dispatchers.IO) { runCatching { worker.exitOnTerminate() } }
                 transport.close()
                 // The failure reaches the collector, not the thread's uncaught handler.
                 assertIs<ConnectionClosedException>(failure.await())
@@ -255,25 +256,70 @@ private suspend fun withWorkerSocket(
     val server = ServerSocket(0, 1, InetAddress.getLoopbackAddress())
     val worker = Socket(InetAddress.getLoopbackAddress(), server.localPort)
     val host = withContext(Dispatchers.IO) { server.accept() }
-    val transport = JvmBareRpcTransport(host, rpcLimits = limits)
+    worker.writeFrame(STOW_CONTROL, "{\"type\":\"ready\"}".encodeToByteArray())
+    val transport = JvmBareRpcTransport.attach(host, rpcLimits = limits)
     try {
         block(transport, worker)
     } finally {
+        val exiting = launch(Dispatchers.IO) { runCatching { worker.exitOnTerminate() } }
         transport.close()
+        exiting.join()
         worker.close()
         server.close()
     }
 }
 
-private fun Socket.readMessage(): Message {
+private const val STOW_CONTROL = 0
+private const val STOW_USER = 1
+
+/** The next bare-stow frame the host sent, its tag first, or null once the host ends the connection. */
+private fun Socket.readFrame(): ByteArray? {
     val input = getInputStream()
     val prefix = input.readNBytes(4)
-    require(prefix.size == 4)
+    if (prefix.size < 4) return null
     val length = (prefix[0].toInt() and 0xff) or
         ((prefix[1].toInt() and 0xff) shl 8) or
         ((prefix[2].toInt() and 0xff) shl 16) or
         ((prefix[3].toInt() and 0xff) shl 24)
-    return Messages.decode(prefix + input.readNBytes(length)).message
+    return input.readNBytes(length)
+}
+
+/**
+ * The next bare-rpc message the host sent, unwrapped from its bare-stow user
+ * frame. Control frames, such as the host's `configure`, are skipped.
+ */
+private fun Socket.readMessage(): Message {
+    while (true) {
+        val body = requireNotNull(readFrame())
+        if (body[0].toInt() == STOW_CONTROL) continue
+        assertEquals(STOW_USER, body[0].toInt())
+        return Messages.decode(body.copyOfRange(1, body.size)).message
+    }
+}
+
+/** Answers the host's `terminate` as bare-stow's runtime does: an `exit` frame, then the end of the connection. */
+private fun Socket.exitOnTerminate() {
+    while (true) {
+        val body = readFrame() ?: return
+        if (body[0].toInt() == STOW_CONTROL && body.decodeToString(1, body.size).contains("\"terminate\"")) {
+            writeFrame(STOW_CONTROL, "{\"type\":\"exit\",\"code\":0}".encodeToByteArray())
+            close()
+            return
+        }
+    }
+}
+
+private fun Socket.writeFrame(tag: Int, payload: ByteArray) {
+    val length = payload.size + 1
+    val header = byteArrayOf(
+        length.toByte(),
+        (length ushr 8).toByte(),
+        (length ushr 16).toByte(),
+        (length ushr 24).toByte(),
+        tag.toByte(),
+    )
+    getOutputStream().write(header + payload)
+    getOutputStream().flush()
 }
 
 private fun Socket.readRequestData(): ByteArray? {
@@ -282,10 +328,7 @@ private fun Socket.readRequestData(): ByteArray? {
     return chunk.data
 }
 
-private fun Socket.write(message: Message) {
-    getOutputStream().write(Messages.encode(message))
-    getOutputStream().flush()
-}
+private fun Socket.write(message: Message) = writeFrame(STOW_USER, Messages.encode(message))
 
 /** 20 lines of 2 KiB: well past the library's 16 KiB pause mark while the collector holds the first. */
 private const val LINES_PAST_THE_PAUSE_MARK = 20
