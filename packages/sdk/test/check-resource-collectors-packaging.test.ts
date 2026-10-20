@@ -30,7 +30,8 @@ const BUNDLE: BundleSdkResult = {
   target: 'bare-sidecar',
   hosts: ['linux-x64'],
   entryPath: '/tmp/project/qvac/worker.entry.mjs',
-  harnessPath: '/tmp/project/qvac/worker/index.mjs',
+  language: 'javascript',
+  outputDir: '/tmp/project/qvac/worker',
   bundlePath: '/tmp/project/qvac/worker/index.bundle',
   plugins: [],
   addons: ['bare-cpu-info', 'bare-gpu-info'],
@@ -140,7 +141,8 @@ describe('runResourceCollectorPackagingCheck', () => {
         projectRoot: '/tmp/project',
         sdkPath: '/repo/packages/sdk',
         hosts: ['linux-x64'],
-        quiet: true
+        quiet: true,
+        verify: false
       }
     ])
     assert.deepEqual(acceptanceCalls, [
