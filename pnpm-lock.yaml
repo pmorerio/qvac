@@ -816,8 +816,8 @@ importers:
         specifier: ^3.1.1
         version: 3.1.1
       bare-rpc:
-        specifier: ^1.3.8
-        version: 1.3.8(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
+        specifier: ^1.3.9
+        version: 1.3.9(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
       bare-stream:
         specifier: ^2.13.3
         version: 2.13.3(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
@@ -1690,17 +1690,23 @@ importers:
         specifier: ^3.0.1
         version: 3.1.1
       bare-rpc:
-        specifier: ^1.3.2
-        version: 1.3.8(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
+        specifier: ^1.3.9
+        version: 1.3.9(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
       bare-sidecar:
-        specifier: ^0.5.9
+        specifier: ^0.5.12
         version: 0.5.13(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
       bare-stow:
-        specifier: ^0.1.8
-        version: 0.1.9(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6)
+        specifier: ^0.2.0
+        version: 0.2.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6)
+      bare-stow-host:
+        specifier: ^0.1.0
+        version: 0.1.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
+      bare-stow-runtime:
+        specifier: ^0.1.0
+        version: 0.1.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
       bare-stow-target-react-native:
-        specifier: ^0.1.2
-        version: 0.1.2(bare-stow@0.1.9(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6))
+        specifier: ^0.2.0
+        version: 0.2.0(bare-stow@0.2.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6))
       bare-stream:
         specifier: 2.13.3
         version: 2.13.3(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
@@ -1790,8 +1796,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.3(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)
       bare-stow-target-pear-runtime:
-        specifier: ^0.1.1
-        version: 0.1.1(bare-stow@0.1.9(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6))
+        specifier: ^0.2.0
+        version: 0.2.0(bare-stow@0.2.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6))
       bare-subprocess:
         specifier: ^6.1.0
         version: 6.1.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)
@@ -5859,6 +5865,10 @@ packages:
     resolution: {integrity: sha512-b8nMnBmC7rfOGakjfDrDJwgQGSey86x3OH2CA6Bu2FepCx/gy0PZzrwEViaW8+90JJz2T4r6o3QtxRebLL2n8Q==}
     hasBin: true
 
+  bare-link@4.1.0:
+    resolution: {integrity: sha512-vzseYttbNgMUEbJCwZPo8gjHpROSvK4Ztth04+NbdWQioXhCpJxrUtGBUNiJyYbV6aOz+GqjjMGZbl0xYihjig==}
+    hasBin: true
+
   bare-logger@2.0.3:
     resolution: {integrity: sha512-U6K7NxHdeAHxEgHFDV8zXvgjgDZKQO6LlCrxQvUvlrZEVTnoezSImMWizi85rbZpVsbeI1ZWcLCRGnoIf5EV8Q==}
 
@@ -6011,8 +6021,8 @@ packages:
   bare-readline@1.3.1:
     resolution: {integrity: sha512-QtSU4ZfgQcDI6AQssjDFqTiRe4rCiciMn+Yqx6siMJZBIftAIFrNSOK0sa5SBrmNv/a7CD9Dm0onUDCRyn5Fdg==}
 
-  bare-rpc@1.3.8:
-    resolution: {integrity: sha512-6fnkIHK+mecUjriOmzaXCYPpJm9JZxKHb5q4I1eTclHN5H+M7keYS68YjEhpVomnF14ArZYTWfRHJPZibTEMWA==}
+  bare-rpc@1.3.9:
+    resolution: {integrity: sha512-Q7WKs4StwB0W7WXwleQjdQHoJpjShOhL7uUz3KXHlQH6gsc40hbO1PKNtmgFf8dgh4BxT3lElB3+GQCrXHn7OQ==}
     peerDependencies:
       bare-buffer: '*'
     peerDependenciesMeta:
@@ -6114,25 +6124,36 @@ packages:
   bare-stdio@1.0.3:
     resolution: {integrity: sha512-8BRMx7RWMWCbBmKhyHgBco62J+Pgss7+EPI21L3R9+w0UpwDYWUUcbE0YTOesGyt7M6N7VtoshYbzwrP0pI52Q==}
 
-  bare-stow-target-pear-runtime@0.1.1:
-    resolution: {integrity: sha512-cQWH6iyeSMVAeuMqpOXT3jtKUxmQfrkSVJzfHjIcgCZBPoFTfKUZIt8uEk/6HbkHCTYep8HCCfOTjRsqA5kQww==}
-    peerDependencies:
-      bare-stow: ^0.1.0
+  bare-stow-host@0.1.0:
+    resolution: {integrity: sha512-1Pmr+flGZUsgek9/UyxOT/OgDxM5vFDtz/OEKWvrBbnoLDeAQGu4J50fS8vnN6KCInGOqi/1E01Gol2XaI0SbA==}
 
-  bare-stow-target-react-native@0.1.2:
-    resolution: {integrity: sha512-ty66Kh3ZYI6xaXMdNViNaGGvPBZMXK73Wmgudbuuq+VOwMWvE10YLyf0Zb3xHcsV8/+JtmguKvJUSn8/u3seKg==}
-    peerDependencies:
-      bare-stow: ^0.1.0
-
-  bare-stow@0.1.9:
-    resolution: {integrity: sha512-PNESLHMgZest7RN55dZoBIAYnmWKmeZ+5MveJ8df9S26mrgJTtclKGQ1a4cKRtisYY5fUG6yFaeCoW9kWxT8NA==}
-    hasBin: true
+  bare-stow-protocol@0.1.0:
+    resolution: {integrity: sha512-4bTDFOMXY5ZjZnH/J/DrRq+Pk5Q5HZuXNkZjxxhcA5I1jCRFRX3toKk5ZKtxCV7jfv8eRC5ghtqX9GUV2oFYlg==}
     peerDependencies:
       bare-buffer: ^3.6.0
-      bare-url: ^2.4.0
     peerDependenciesMeta:
       bare-buffer:
         optional: true
+
+  bare-stow-runtime@0.1.0:
+    resolution: {integrity: sha512-erlgBWeOecJUdZdSA7n9mwuSQzT0a4iUWvmVR3R/n8k1uv9igjDzZw4ZfK/P9Q5mYNWGII4JkDj0Qa1phGoXMw==}
+
+  bare-stow-target-pear-runtime@0.2.0:
+    resolution: {integrity: sha512-0Jm7A/9ZhIahGIgQiS4wfrqxvM1qRcRjY0v7xtiDqoCi5Dv8ERyQf9qBXdVwueidg80EPWiGwUiJWEQqpgh7ow==}
+    peerDependencies:
+      bare-stow: ^0.2.0
+
+  bare-stow-target-react-native@0.2.0:
+    resolution: {integrity: sha512-Lu+UJgslO15t7ZCkb3PAX70gkvoAuLszLSasY+f+4nqBMNsExJQr3IROLP09zv3MX/vp22DWN9pu3KmwRqE7mQ==}
+    peerDependencies:
+      bare-stow: ^0.2.0
+
+  bare-stow@0.2.0:
+    resolution: {integrity: sha512-dEkYKeFcmog6vmEhlMvUi9zwdABDKfrBEkXO2oQ2Ox0JFzv6cCZ8d0fr3jLPq8fwHm7g062/IzdzhE5Ky59qTQ==}
+    hasBin: true
+    peerDependencies:
+      bare-url: ^2.4.0
+    peerDependenciesMeta:
       bare-url:
         optional: true
 
@@ -6245,6 +6266,10 @@ packages:
   bare-type@1.4.0:
     resolution: {integrity: sha512-6anDbVGruQLK8m6zxlCPNkUuxXnzChT1aOmJbFRjEGn8MWZqviFP6vGi9NAnG8aRXyRAfXIGLlBJwYGa4Ylcug==}
     engines: {bare: '>=1.32.0'}
+
+  bare-unpack@1.1.4:
+    resolution: {integrity: sha512-AfRyzP59Bsm1tJWRt5be2ffmvOkagu2zJPvQKwoxmM9hLQWHWUUd+95VOSEWCUMrkEsL8GSlMTJ/LxuUI2/71A==}
+    hasBin: true
 
   bare-url@2.4.6:
     resolution: {integrity: sha512-iQxPClE07hETVpbRoX7JXX3v/ZQViCxe/SYCxylRLzdEx1xJAufPptfiOqR8tqiCtmbtMDANKWszzjLu1PMAZQ==}
@@ -16276,6 +16301,24 @@ snapshots:
       - bare-events
       - react-native-b4a
 
+  bare-link@4.1.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2)):
+    dependencies:
+      bare-fs: 4.7.4(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)
+      bare-lief: 0.2.10(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.5.4)
+      bare-module-resolve: 1.12.6(bare-url@2.5.4)
+      bare-module-traverse: 2.7.1(bare-buffer@3.6.2)(bare-url@2.5.4)
+      bare-os: 3.9.3
+      bare-path: 3.1.1
+      bare-semver: 1.1.0
+      bare-subprocess: 6.2.2(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)
+      bare-url: 2.5.4
+      paparam: 1.10.1
+    transitivePeerDependencies:
+      - bare-abort-controller
+      - bare-buffer
+      - bare-events
+      - react-native-b4a
+
   bare-logger@2.0.3(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2)):
     dependencies:
       bare-format: 1.0.2(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
@@ -16522,7 +16565,7 @@ snapshots:
       - bare-events
       - react-native-b4a
 
-  bare-rpc@1.3.8(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2)):
+  bare-rpc@1.3.9(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2)):
     dependencies:
       b4a: 1.8.1
       bare-stream: 2.13.3(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
@@ -16806,33 +16849,63 @@ snapshots:
       - bare-buffer
       - react-native-b4a
 
-  bare-stow-target-pear-runtime@0.1.1(bare-stow@0.1.9(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6)):
+  bare-stow-host@0.1.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2)):
     dependencies:
-      bare-stow: 0.1.9(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6)
+      bare-stow-protocol: 0.1.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
+      bare-stream: 2.13.3(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
+    transitivePeerDependencies:
+      - bare-abort-controller
+      - bare-buffer
+      - bare-events
+      - react-native-b4a
 
-  bare-stow-target-react-native@0.1.2(bare-stow@0.1.9(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6)):
-    dependencies:
-      bare-stow: 0.1.9(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6)
-
-  bare-stow@0.1.9(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6):
+  bare-stow-protocol@0.1.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2)):
     dependencies:
       b4a: 1.8.1
+      bare-stream: 2.13.3(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
+    optionalDependencies:
+      bare-buffer: 3.6.2
+    transitivePeerDependencies:
+      - bare-abort-controller
+      - bare-events
+      - react-native-b4a
+
+  bare-stow-runtime@0.1.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2)):
+    dependencies:
+      bare-signals: 5.0.0(bare-abort-controller@1.1.2)
+      bare-stow-protocol: 0.1.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
+      bare-stream: 2.13.3(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
+    transitivePeerDependencies:
+      - bare-abort-controller
+      - bare-buffer
+      - bare-events
+      - react-native-b4a
+
+  bare-stow-target-pear-runtime@0.2.0(bare-stow@0.2.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6)):
+    dependencies:
+      bare-stow: 0.2.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6)
+
+  bare-stow-target-react-native@0.2.0(bare-stow@0.2.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6)):
+    dependencies:
+      bare-stow: 0.2.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6)
+
+  bare-stow@0.2.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6):
+    dependencies:
       bare-bundle: 1.11.0(bare-buffer@3.6.2)(bare-url@2.4.6)
       bare-bundle-id: 1.0.2(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-bundle@1.11.0(bare-buffer@3.6.2)(bare-url@2.4.6))(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6)
       bare-fs: 4.7.4(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)
-      bare-module-lexer: 1.7.0(bare-buffer@3.6.2)(bare-url@2.4.6)
+      bare-link: 4.1.0(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
       bare-module-traverse: 2.7.1(bare-buffer@3.6.2)(bare-url@2.4.6)
       bare-pack: 3.0.2(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))(bare-url@2.4.6)
       bare-path: 3.1.1
-      bare-signals: 5.0.0(bare-abort-controller@1.1.2)
-      bare-stream: 2.13.3(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-events@2.9.1(bare-abort-controller@1.1.2))
       bare-type-stripper: 0.1.4(bare-buffer@3.6.2)(bare-url@2.4.6)
+      bare-unpack: 1.1.4(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-url@2.4.6)
       paparam: 1.10.1
     optionalDependencies:
-      bare-buffer: 3.6.2
       bare-url: 2.4.6
     transitivePeerDependencies:
       - bare-abort-controller
+      - bare-buffer
       - bare-events
       - react-native-b4a
 
@@ -17008,6 +17081,19 @@ snapshots:
   bare-type@1.1.0: {}
 
   bare-type@1.4.0: {}
+
+  bare-unpack@1.1.4(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)(bare-url@2.4.6):
+    dependencies:
+      bare-bundle: 1.11.0(bare-buffer@3.6.2)(bare-url@2.4.6)
+      bare-fs: 4.7.4(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)
+      bare-path: 3.1.1
+      paparam: 1.10.1
+      promaphore: 1.0.0
+    transitivePeerDependencies:
+      - bare-abort-controller
+      - bare-buffer
+      - bare-url
+      - react-native-b4a
 
   bare-url@2.4.6:
     dependencies:

@@ -1,19 +1,17 @@
 import RPC from 'bare-rpc'
-import type host from 'bare-stow/host'
+import type { IPC as WorkerIPC } from 'bare-stow-host'
 import {
   RPCConnectionFailedError,
   WorkerCrashedError,
-  WorkerShutdownError,
-  WorkerStartupError
+  WorkerShutdownError
 } from '@/utils/errors-client'
 import { initializeConfig } from '@/client/init-hooks'
+import { workerStartupFailed } from '@/client/rpc/worker-failure'
 import { resolveConfig } from '@/client/config-loader/resolve-config.expo'
 import { getClientLogger } from '@/logging'
 import { getDeviceInfo } from '@/client/rpc/expo-device-info'
 import { getHomeDir } from '@/client/rpc/expo-home-dir'
 import type { RuntimeContext } from '@qvac/inference/surface'
-
-type WorkerIPC = InstanceType<typeof host.IPC>
 
 /** The bare-stow harness the Expo plugin copies into the SDK during prebuild. */
 interface MobileHarness {
@@ -68,10 +66,11 @@ function loadHarness(): MobileHarness {
 
 async function startWorker(): Promise<WorkerIPC> {
   const harness = loadHarness()
+  const started = Date.now()
   try {
     return (await harness.start({ timeout: WORKER_READY_TIMEOUT_MS })).ipc
   } catch (error) {
-    throw new WorkerStartupError('Worker failed before signalling ready', error)
+    throw workerStartupFailed(error, Date.now() - started >= WORKER_READY_TIMEOUT_MS)
   }
 }
 
@@ -91,7 +90,7 @@ function dropWorker(reason: Error): WorkerIPC | null {
 
 export function notifyChannelClosed(): void {
   if (!workerLifeController || workerLifeController.signal.aborted) return
-  void dropWorker(new WorkerCrashedError())?.terminate()
+  void dropWorker(new WorkerCrashedError(null, null))?.terminate()
 }
 
 async function ensureRPC(): Promise<RPC> {
@@ -120,13 +119,13 @@ async function ensureRPC(): Promise<RPC> {
     ipc.once('close', () => {
       if (workerIpc !== ipc) return
       logger.info('🪦 Bare worklet closed unexpectedly')
-      dropWorker(new WorkerCrashedError(workerError))
+      dropWorker(new WorkerCrashedError(null, null, workerError))
     })
 
     const rpc = new RPC(ipc, () => {})
     await initializeConfig(rpc, resolveConfig, await getRuntimeContext(), await getHomeDir())
     if (startGeneration !== generation) throw new WorkerShutdownError()
-    if (workerIpc !== ipc) throw new WorkerCrashedError(workerError)
+    if (workerIpc !== ipc) throw new WorkerCrashedError(null, null, workerError)
 
     rpcInstance = rpc
     return rpc
@@ -138,7 +137,9 @@ async function ensureRPC(): Promise<RPC> {
   } catch (error) {
     logger.error(`Failed to initialize RPC: ${String(error)}`)
     if (startGeneration === generation) {
-      void dropWorker(error instanceof Error ? error : new WorkerCrashedError(error))?.terminate()
+      void dropWorker(
+        error instanceof Error ? error : new WorkerCrashedError(null, null, error)
+      )?.terminate()
     }
     throw error
   } finally {
@@ -155,10 +156,10 @@ export async function close(): Promise<void> {
 
   generation++
   closePromise = (async () => {
+    const pending = rpcPromise
+    rpcPromise = null
     const ipc = dropWorker(new WorkerShutdownError())
     if (!ipc) {
-      const pending = rpcPromise
-      rpcPromise = null
       await pending?.catch(() => {})
       return
     }

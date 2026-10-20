@@ -29,8 +29,16 @@ const started: FakeWorklet[] = []
   }
 }
 
+let initializeGate: Promise<void> = Promise.resolve()
+let initializeCalls = 0
+
 mock.module('@/client/init-hooks', {
-  namedExports: { initializeConfig: async () => {} }
+  namedExports: {
+    initializeConfig: async () => {
+      initializeCalls++
+      await initializeGate
+    }
+  }
 })
 mock.module('@/client/config-loader/resolve-config.expo', {
   namedExports: { resolveConfig: async () => undefined }
@@ -72,6 +80,28 @@ test('calls made while close runs share one new worklet', async () => {
 
   assert.equal(started.length, before + 1)
   assert.equal(first, second)
+  await close()
+})
+
+test('a call made while close stops a starting worklet gets a new worklet', async () => {
+  let openGate = () => {}
+  initializeGate = new Promise((resolve) => {
+    openGate = resolve
+  })
+  const before = started.length
+  const calls = initializeCalls
+  const starting = getRPC()
+  while (initializeCalls === calls) await new Promise((resolve) => setImmediate(resolve))
+
+  const closing = close()
+  initializeGate = Promise.resolve()
+  const next = getRPC()
+  openGate()
+
+  await assert.rejects(starting, (error: { name?: string }) => error.name === 'WORKER_SHUTDOWN')
+  await next
+  await closing
+  assert.equal(started.length, before + 2)
   await close()
 })
 

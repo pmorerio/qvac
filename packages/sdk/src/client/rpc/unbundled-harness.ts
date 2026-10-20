@@ -1,7 +1,5 @@
-import host from 'bare-stow/host'
+import { wrap, type IPC } from 'bare-stow-host'
 import { fileURLToPath } from 'node:url'
-
-type WorkerIPC = InstanceType<typeof host.IPC>
 
 function unbundledShim(): string {
   type ImportMetaAsset = { asset?: (spec: string) => string }
@@ -13,12 +11,15 @@ function unbundledShim(): string {
   )
 }
 
+/** Starts a worker entry without a bundle on bare-sidecar, wrapped by bare-stow-host. */
 export async function start(
   entry: string,
   options: { timeout?: number } = {}
-): Promise<{ ipc: WorkerIPC }> {
+): Promise<{ ipc: IPC }> {
   const { default: Sidecar } = await import('bare-sidecar')
-  const ipc = new host.IPC(new Sidecar(unbundledShim(), [entry], { stdio: 'inherit' }), options)
+  const sidecar = new Sidecar(unbundledShim(), [entry], { stdio: 'inherit' })
+  const ipc = wrap(sidecar, { ...options, kill: () => sidecar.kill('SIGKILL') })
+  sidecar.on('exit', (code, signal) => ipc.exited(code, signal))
   await ipc.ready
   return { ipc }
 }
