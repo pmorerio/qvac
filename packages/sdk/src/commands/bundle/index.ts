@@ -23,10 +23,15 @@ import {
   listBundledAddonModules,
   listBundledAddons
 } from '@/commands/bundle/addons'
-import { linkAddons } from '@/commands/bundle/link'
+import { assertReactNativeBareKitSupported, linkAddons } from '@/commands/bundle/link'
 import { assertNodeCanBundle } from '@/commands/bundle/node-support'
 import { readBundle } from '@/commands/bundle/read-bundle'
-import { TARGETS, type BundleTarget } from '@/commands/bundle/targets'
+import {
+  HARNESS_FILE,
+  TARGETS,
+  type BundleLanguage,
+  type BundleTarget
+} from '@/commands/bundle/targets'
 import {
   findMissingPlatformPackages,
   installMissingHostPrebuilds,
@@ -48,8 +53,22 @@ export interface BundleSdkOptions {
   /** Where the worker runs. Defaults to `bare-sidecar`. */
   target?: BundleTarget | undefined
   /**
+   * The language of the app that starts the worker, which bare-stow writes
+   * the harness package in: `javascript` (the default), `kotlin` for
+   * `bare-kit`, or `python` for `bare-sidecar`.
+   */
+  language?: BundleLanguage | undefined
+  /** bare-stow's options for the language, such as `{ package }` for `kotlin`. */
+  languageOptions?: Record<string, string> | undefined
+  /**
+   * The folder bare-stow writes the harness package to, which must be empty or
+   * not exist yet. Defaults to `qvac/worker/`, which each bundle replaces.
+   */
+  outputDir?: string | undefined
+  /**
    * Hosts to bundle for. Defaults to this machine for `bare-sidecar` and
-   * `pear-runtime`, and to every phone host for `react-native`.
+   * `pear-runtime`, to every phone host for `react-native`, and to the
+   * Android hosts for `bare-kit`.
    */
   hosts?: string[] | undefined
   defer?: string[] | undefined
@@ -85,10 +104,11 @@ export interface BundleSdkOptions {
 export interface BundleSdkResult {
   target: BundleTarget
   hosts: string[]
+  language: BundleLanguage
   /** The generated worker entry the bundle starts from. */
   entryPath: string
-  /** The bare-stow harness that starts the bundled worker. */
-  harnessPath: string
+  /** bare-stow's harness package: the module that starts the worker, its manifest and the bundle. */
+  outputDir: string
   bundlePath: string
   plugins: string[]
   addons: string[]
@@ -219,6 +239,7 @@ async function verifyOutput(options: VerifyOutputOptions) {
 
 function defaultHosts(target: BundleTarget): string[] {
   if (target === 'react-native') return DEFAULT_HOSTS.filter(isMobileHost)
+  if (target === 'bare-kit') return DEFAULT_HOSTS.filter((host) => host.startsWith('android-'))
   return [`${process.platform}-${process.arch}`]
 }
 
@@ -228,72 +249,97 @@ interface StowBundleOptions {
   projectRoot: string
   entryPath: string
   target: BundleTarget
+  language: BundleLanguage
+  languageOptions: Record<string, string>
   outputDir: string
   hosts: string[]
   imports: ImportsMap
   deferModules: string[]
 }
 
-/** Writes the bundle, the harness and the files the bundle loads, and returns the bundle's path. */
+/** Writes bare-stow's harness package for the target to `outputDir`, and returns the bundle's path. */
 async function stowBundle(options: StowBundleOptions): Promise<string> {
-  const { projectRoot, entryPath, target, outputDir, hosts, imports, deferModules } = options
-  const spec = TARGETS[target]
-  const harnessPath = path.join(outputDir, spec.harness)
-  const stowTarget = await spec.load(projectRoot)
+  const { projectRoot, entryPath, target, language, outputDir, hosts, imports, deferModules } =
+    options
+  const stowTarget = await TARGETS[target].load(projectRoot)
 
   assertNodeCanBundle()
-  await fsp.rm(outputDir, { recursive: true, force: true })
 
   // With no base, bare-stow keys the bundle from the closest folder holding
   // every module.
-  const stowOptions: stow.StowOptions = { imports, defer: deferModules, hosts }
+  const stowOptions: stow.StowOptions = {
+    imports,
+    defer: deferModules,
+    hosts,
+    language,
+    languageOptions: options.languageOptions
+  }
 
-  const written: string[] = []
+  let bundlePath: string | undefined
   try {
     for await (const artifact of stow(
       pathToFileURL(entryPath).href,
       stowTarget,
-      pathToFileURL(harnessPath).href,
+      pathToFileURL(outputDir).href,
       stowOptions
     )) {
-      written.push(fileURLToPath(artifact.url.href))
+      if (artifact.base !== undefined) bundlePath = fileURLToPath(artifact.url.href)
     }
   } catch (error) {
     throw new BundleFailedError(entryPath, error)
   }
 
-  const bundlePath = written.find(
-    (file) => path.dirname(file) === outputDir && file !== harnessPath && !file.endsWith('.d.ts')
-  )
   if (bundlePath === undefined) {
     throw new BundleFailedError(entryPath, new Error(`bare-stow wrote no bundle to ${outputDir}`))
   }
+  if (language === 'javascript') await assertHarnessDependenciesResolve(entryPath, outputDir)
   return bundlePath
 }
 
-export function bundleSdk(options: BundleSdkOptions = {}): Promise<BundleSdkResult> {
-  return bundle(options, false)
+/**
+ * A `javascript` harness imports the dependencies bare-stow lists in its
+ * `package.json` by name, from the project that holds the package.
+ */
+async function assertHarnessDependenciesResolve(entryPath: string, outputDir: string) {
+  const manifest = JSON.parse(await fsp.readFile(path.join(outputDir, 'package.json'), 'utf8')) as {
+    dependencies?: Record<string, string>
+  }
+  for (const name of Object.keys(manifest.dependencies ?? {})) {
+    if (findInAncestorNodeModules(outputDir, name) !== null) continue
+    throw new BundleFailedError(
+      entryPath,
+      new Error(`${HARNESS_FILE} imports '${name}', which the project cannot resolve`)
+    )
+  }
 }
 
-// Only for the CI resource collector check, which bundles every desktop host on
-// one runner that has only its own hosts' platform packages. Not public API.
-export function bundleSdkDeferringMissingPlatformPackages(
-  options: BundleSdkOptions
-): Promise<BundleSdkResult> {
-  return bundle(options, true)
+async function assertOutputDirEmpty(outputDir: string, entryPath: string) {
+  let entries: string[]
+  try {
+    entries = await fsp.readdir(outputDir)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return
+    throw new BundleFailedError(entryPath, error)
+  }
+  if (entries.length > 0) {
+    throw new BundleFailedError(
+      entryPath,
+      new Error(`outputDir ${outputDir} must be empty or not exist yet`)
+    )
+  }
 }
 
-async function bundle(
-  options: BundleSdkOptions,
-  deferMissingPlatformPackages: boolean
-): Promise<BundleSdkResult> {
+export async function bundleSdk(options: BundleSdkOptions = {}): Promise<BundleSdkResult> {
   const startTime = Date.now()
 
   const projectRoot = path.resolve(options.projectRoot ?? process.cwd())
   const qvacDir = path.join(projectRoot, 'qvac')
-  const outputDir = path.join(qvacDir, 'worker')
+  const outputDir = path.resolve(options.outputDir ?? path.join(qvacDir, 'worker'))
   const entryPath = path.join(qvacDir, 'worker.entry.mjs')
+  if (options.outputDir !== undefined) await assertOutputDirEmpty(outputDir, entryPath)
   const target = options.target ?? 'bare-sidecar'
+  const language = options.language ?? 'javascript'
+  const languageOptions = options.languageOptions ?? {}
 
   const logger = createCommandLogger(options)
 
@@ -330,7 +376,9 @@ async function bundle(
   if (!sdkByName) {
     const sdkRequire = createRequire(path.join(sdkPath, 'package.json'))
     Object.assign(imports, sdkImportsMap(sdkPath, sdkName))
-    imports['bare-stow/runtime'] = pathToFileURL(sdkRequire.resolve('bare-stow/runtime')).href
+    for (const runtime of ['bare-stow-runtime', 'bare-stow-runtime/process']) {
+      imports[runtime] = pathToFileURL(sdkRequire.resolve(runtime)).href
+    }
   }
 
   const pluginSpecifiers = resolvePluginSpecifiers(config, sdkName, logger)
@@ -358,7 +406,10 @@ async function bundle(
     }
   }
 
+  if (target === 'react-native') await assertReactNativeBareKitSupported(projectRoot, sdkPath)
+
   await fsp.mkdir(qvacDir, { recursive: true })
+  if (options.outputDir === undefined) await fsp.rm(outputDir, { recursive: true, force: true })
 
   logger.info('\n📝 Generating worker entry...')
   await fsp.writeFile(
@@ -374,7 +425,17 @@ async function bundle(
     logger.debug(`   Deferred: ${deferModules.join(', ')}`)
   }
 
-  const stowOptions = { projectRoot, entryPath, target, outputDir, hosts, imports, deferModules }
+  const stowOptions = {
+    projectRoot,
+    entryPath,
+    target,
+    language,
+    languageOptions,
+    outputDir,
+    hosts,
+    imports,
+    deferModules
+  }
 
   const addonsMissingPlatformPackages = () =>
     reachedAddonsMissingPlatformPackages({
@@ -384,7 +445,8 @@ async function bundle(
         ),
       hosts,
       scan: async (extraDefer) => {
-        const scanDir = path.join(qvacDir, 'worker.scan')
+        const scanDir = path.join(qvacDir, 'worker-scan')
+        await fsp.rm(scanDir, { recursive: true, force: true })
         try {
           const bundlePath = await stowBundle({
             ...stowOptions,
@@ -400,12 +462,8 @@ async function bundle(
     })
 
   let installedPrebuilds: HostPrebuildPackage[] = []
-  let bundleDefer = deferModules
   const missingPlatformAddons = await addonsMissingPlatformPackages()
-  if (deferMissingPlatformPackages) {
-    const missing = await findMissingPlatformPackages(missingPlatformAddons, hosts)
-    bundleDefer = [...deferModules, ...missing.map((pkg) => pkg.name)]
-  } else if (options.installMissingPrebuilds === true) {
+  if (options.installMissingPrebuilds === true) {
     const { installed } = await installMissingHostPrebuilds({
       projectRoot,
       hosts,
@@ -422,7 +480,7 @@ async function bundle(
     await throwIfPlatformPackagesMissing(missingPlatformAddons, hosts)
   }
 
-  const bundlePath = await stowBundle({ ...stowOptions, deferModules: bundleDefer })
+  const bundlePath = await stowBundle(stowOptions)
 
   const stats = await fsp.stat(bundlePath)
   const sizeKB = (stats.size / 1024).toFixed(1)
@@ -451,23 +509,23 @@ async function bundle(
   let linked: string[] = []
   if (target === 'react-native' && options.link !== false) {
     logger.info('\n🔗 Linking native addons into react-native-bare-kit...')
-    linked = await linkAddons({ projectRoot, addonModules, hosts, logger })
+    linked = await linkAddons({ projectRoot, bundlePath, addonModules, hosts, logger })
     logger.info(`   Wrote ${linked.length} files`)
   }
 
-  const harnessPath = path.join(outputDir, TARGETS[target].harness)
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(2)
   logger.info(`\n🎉 Done in ${elapsed}s!\n`)
   logger.info('Generated files:')
   logger.info(`  - ${path.relative(projectRoot, entryPath)}    (worker entry)`)
-  logger.info(`  - ${path.relative(projectRoot, harnessPath)}    (starts the bundled worker)`)
+  logger.info(`  - ${path.relative(projectRoot, outputDir)}    (starts the bundled worker)`)
   logger.info(`  - ${path.relative(projectRoot, bundlePath)}\n`)
 
   return {
     target,
+    language,
     hosts,
     entryPath,
-    harnessPath,
+    outputDir,
     bundlePath,
     plugins: pluginSpecifiers,
     addons,

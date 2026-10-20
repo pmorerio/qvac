@@ -413,6 +413,30 @@ describe('bundleSdk', () => {
     assert.ok(!fs.existsSync(path.join(workerDir, 'stale.bare')))
   })
 
+  it('refuses a given output folder that has files, and keeps them', async (t) => {
+    const { projectRoot, configPath } = fakeBundleSdkProject(t)
+    const outputDir = path.join(projectRoot, 'src')
+    writeFile(path.join(outputDir, 'app.js'), '')
+
+    await assert.rejects(
+      bundleSdk({ projectRoot, configPath, outputDir, quiet: true }),
+      (error: unknown) =>
+        error instanceof BundleFailedError && error.message.includes('must be empty or not exist')
+    )
+    assert.ok(fs.existsSync(path.join(outputDir, 'app.js')))
+  })
+
+  it('bundles into a given empty output folder', async (t) => {
+    const { projectRoot, configPath } = fakeBundleSdkProject(t)
+    const outputDir = path.join(projectRoot, 'out')
+    fs.mkdirSync(outputDir)
+
+    const result = await bundleSdk({ projectRoot, configPath, outputDir, quiet: true })
+
+    assert.ok(fs.existsSync(path.join(outputDir, 'index.js')))
+    assert.equal(result.bundlePath, path.join(outputDir, 'index.bundle'))
+  })
+
   it('bundles a PCM-only audio plugin without linking bare-ffmpeg', async (t) => {
     const { projectRoot, sdkPath, configPath } = fakeBundleSdkProject(t)
     addAddon(path.join(sdkPath, 'node_modules', 'bare-ffmpeg'), 'bare-ffmpeg')

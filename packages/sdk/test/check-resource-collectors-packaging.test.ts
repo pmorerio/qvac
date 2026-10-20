@@ -130,7 +130,9 @@ describe('runResourceCollectorPackagingCheck', () => {
       {
         sdkPackageRoot: '/repo/packages/sdk',
         hosts: ['linux-x64'],
-        json: true
+        json: true,
+        platform: 'linux',
+        arch: 'x64'
       },
       dependencies
     )
@@ -154,6 +156,35 @@ describe('runResourceCollectorPackagingCheck', () => {
     ])
     assert.deepEqual(outputs, [JSON.stringify(REPORT, null, 2)])
     assert.deepEqual(removed, ['/tmp/project'])
+  })
+
+  it('bundles for its own host and checks the collectors for every requested host', async () => {
+    const bundledHosts: (string[] | undefined)[] = []
+    const acceptedHosts: string[][] = []
+    const dependencies = createDependencies({
+      bundleSdk: async (options) => {
+        bundledHosts.push(options.hosts)
+        return BUNDLE
+      },
+      acceptResourceCollectorPackaging: async (options) => {
+        acceptedHosts.push(options.hosts)
+        return REPORT
+      }
+    })
+
+    await runResourceCollectorPackagingCheck(
+      {
+        sdkPackageRoot: '/repo/packages/sdk',
+        hosts: ['win32-arm64', 'win32-x64'],
+        json: false,
+        platform: 'linux',
+        arch: 'x64'
+      },
+      dependencies
+    )
+
+    assert.deepEqual(bundledHosts, [['linux-x64']])
+    assert.deepEqual(acceptedHosts, [['win32-arm64', 'win32-x64']])
   })
 
   it('uses the active host and human formatter when hosts are omitted', async () => {

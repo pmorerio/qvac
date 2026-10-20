@@ -2,11 +2,7 @@ import { promises as fsp } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import {
-  bundleSdkDeferringMissingPlatformPackages,
-  type BundleSdkOptions,
-  type BundleSdkResult
-} from '@/commands/bundle/index'
+import { bundleSdk, type BundleSdkOptions, type BundleSdkResult } from '@/commands/bundle/index'
 import {
   acceptResourceCollectorPackaging,
   formatResourceCollectorAcceptanceReport,
@@ -58,7 +54,7 @@ export interface ResourceCollectorCliOptions {
 const DEFAULT_DEPENDENCIES: ResourceCollectorCheckDependencies = {
   createTemporaryProject,
   removeTemporaryProject,
-  bundleSdk: bundleSdkDeferringMissingPlatformPackages,
+  bundleSdk,
   acceptResourceCollectorPackaging,
   formatResourceCollectorAcceptanceReport,
   writeOutput(output) {
@@ -110,17 +106,20 @@ export async function runResourceCollectorPackagingCheck(
   options: ResourceCollectorCheckOptions,
   dependencies: ResourceCollectorCheckDependencies = DEFAULT_DEPENDENCIES
 ) {
-  const hosts =
-    options.hosts.length > 0
-      ? options.hosts
-      : [resolveDesktopHost(options.platform ?? process.platform, options.arch ?? process.arch)]
+  const ownHost = resolveDesktopHost(
+    options.platform ?? process.platform,
+    options.arch ?? process.arch
+  )
+  const hosts = options.hosts.length > 0 ? options.hosts : [ownHost]
   const temporaryProjectRoot = await dependencies.createTemporaryProject(options.sdkPackageRoot)
 
   try {
+    // Acceptance reads each host's prebuilds from the collector packages; the
+    // bundle only shows which collectors the worker links.
     const bundle = await dependencies.bundleSdk({
       projectRoot: temporaryProjectRoot,
       sdkPath: options.sdkPackageRoot,
-      hosts,
+      hosts: [ownHost],
       quiet: true,
       verify: false
     })

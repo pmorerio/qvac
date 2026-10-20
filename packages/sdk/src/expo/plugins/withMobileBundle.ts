@@ -92,6 +92,7 @@ async function buildMobileBundle<T extends configPlugins.ExportedConfigWithProps
 
   const linked = await linkAddons({
     projectRoot,
+    bundlePath: result.bundlePath,
     addonModules: result.addonModules,
     hosts: platformHosts,
     logger

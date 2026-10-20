@@ -1,6 +1,7 @@
 import fs, { promises as fsp } from 'node:fs'
 import path from 'node:path'
 import { bundleRoot, readBundle } from '@/commands/bundle/read-bundle'
+import { HOST_ADDON_IMPORT } from '@/commands/verify/platform-addons'
 import type { Logger } from '@/logging/types'
 
 interface ListBundledAddonsOptions {
@@ -36,6 +37,30 @@ export function buildNestedPathIndex(
     }
   }
   return index
+}
+
+/** The `#host-addon` map of each split addon the bundle loads, by package name. */
+export async function listBundledHostAddons(options: {
+  bundlePath: string
+  projectRoot: string
+}): Promise<Map<string, unknown>> {
+  const bundle = await readBundle(options.bundlePath)
+  const pathsByPackage = buildNestedPathIndex(
+    bundle.resolutions,
+    bundleRoot(bundle.main, options.projectRoot)
+  )
+
+  const hostAddons = new Map<string, unknown>()
+  for (const [pkgName, candidates] of pathsByPackage) {
+    const candidate = [...candidates].find((file) => fs.existsSync(file))
+    if (candidate === undefined) continue
+    const manifest = JSON.parse(await fsp.readFile(candidate, 'utf8')) as {
+      imports?: Record<string, unknown>
+    }
+    const hostAddon = manifest.imports?.[HOST_ADDON_IMPORT]
+    if (hostAddon !== undefined) hostAddons.set(pkgName, hostAddon)
+  }
+  return hostAddons
 }
 
 /** The native addon packages the bundle's module graph loads, sorted by name. */
