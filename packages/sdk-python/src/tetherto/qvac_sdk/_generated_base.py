@@ -24,7 +24,7 @@ doesn't get lost when a generated subclass sets its own `model_config`
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Literal, get_args, get_origin
 
 from pydantic import BaseModel, ConfigDict
 from pydantic_core import CoreSchema, core_schema
@@ -34,6 +34,17 @@ class GeneratedBaseModel(BaseModel):
     model_config = ConfigDict(validate_default=True, populate_by_name=True)
     __forbidden_fields__: ClassVar[frozenset[str]] = frozenset()
     __forbidden_field_guidance__: ClassVar[dict[str, str]] = {}
+
+    def model_post_init(self, context: Any) -> None:
+        # Codegen defaults the type discriminator; it still belongs on
+        # the wire when the client serializes with exclude_unset=True.
+        field = type(self).model_fields.get("type")
+        if (
+            field is not None
+            and get_origin(field.annotation) is Literal
+            and len(get_args(field.annotation)) == 1
+        ):
+            self.__pydantic_fields_set__.add("type")
 
     @classmethod
     def __get_pydantic_core_schema__(cls, source: Any, handler: Any) -> CoreSchema:
