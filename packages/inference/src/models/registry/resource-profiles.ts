@@ -4554,6 +4554,11 @@ export const MODEL_RESOURCE_PROFILES: Readonly<Record<string, ModelResourceProfi
     engine: 'llamacpp-completion',
     artifactBytes: 7067
   },
+  c1215bca09ed783f34e66ab372b0b02e75213733bea8105764557b58f2082575: {
+    schemaVersion: 1,
+    engine: 'ggml-image-embedding',
+    artifactBytes: 292188448
+  },
   c16496eba77ffe58da672c20693e562124f72e415c40e16663081f50b8a574f3: {
     schemaVersion: 1,
     engine: 'parakeet-transcription',
@@ -5653,6 +5658,11 @@ export const MODEL_RESOURCE_PROFILES: Readonly<Record<string, ModelResourceProfi
     schemaVersion: 1,
     engine: 'parakeet-transcription',
     artifactBytes: 374
+  },
+  f2519f42a826bb82f5d3bd6360e6017fb156ad3cb25f71d73163df01d26c6636: {
+    schemaVersion: 1,
+    engine: 'ggml-image-embedding',
+    artifactBytes: 458022688
   },
   f27814dffca6102255ed7a338f2a83c16905a07e09444016187c768aaf9ac7b6: {
     schemaVersion: 1,

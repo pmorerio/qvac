@@ -71,6 +71,13 @@ export const RESOURCE_TABLE: ResourceTable = {
     type: 'llamacpp-embedding'
   },
 
+  'image-embedding': {
+    on: ['desktop-macos', 'desktop-linux', 'desktop-windows', 'mobile', 'electron', 'snap'],
+    constant: { $const: 'MEGALOC_MIXED' },
+    type: 'ggml-image-embedding',
+    config: { backend: 'CPU', threads: 4 }
+  },
+
   // The reranker the addon's own tests use, pinned until a reranker is in the registry.
   rerank: {
     modelSrc:
