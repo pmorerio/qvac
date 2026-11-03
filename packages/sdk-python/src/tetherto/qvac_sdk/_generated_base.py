@@ -24,7 +24,7 @@ doesn't get lost when a generated subclass sets its own `model_config`
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Literal, get_origin
 
 from pydantic import BaseModel, ConfigDict
 from pydantic_core import CoreSchema, core_schema
@@ -55,3 +55,11 @@ class GeneratedBaseModel(BaseModel):
         return core_schema.no_info_before_validator_function(
             reject_forbidden_fields, schema
         )
+
+    def model_post_init(self, context: Any) -> None:
+        # A `Literal` `type` is the label the worker routes on, so it always
+        # counts as set and an `exclude_unset` dump keeps it even when it
+        # came from the default.
+        field = type(self).model_fields.get("type")
+        if field is not None and get_origin(field.annotation) is Literal:
+            self.model_fields_set.add("type")
