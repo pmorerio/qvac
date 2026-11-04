@@ -1,4 +1,4 @@
-import type { DeleteCacheRequest, DeleteCacheResponse } from '@qvac/inference/surface'
+import type { DeleteCacheRequest, DeleteCacheResponse, RPCOptions } from '@qvac/inference/surface'
 import { send } from '@/client/rpc/rpc-client'
 import { InvalidDeleteCacheParamsError, DeleteCacheFailedError } from '@/utils/errors-client'
 
@@ -28,7 +28,8 @@ import { InvalidDeleteCacheParamsError, DeleteCacheFailedError } from '@/utils/e
  * ```
  */
 export async function deleteCache(
-  params: { all: true } | { auto: true } | { kvCacheKey: string; modelId?: string }
+  params: { all: true } | { auto: true } | { kvCacheKey: string; modelId?: string },
+  options?: RPCOptions
 ) {
   let req: DeleteCacheRequest
 
@@ -52,7 +53,7 @@ export async function deleteCache(
     throw new InvalidDeleteCacheParamsError()
   }
 
-  const response = (await send(req)) as DeleteCacheResponse
+  const response = (await send(req, options)) as DeleteCacheResponse
 
   if (!response.success && response.error) {
     throw new DeleteCacheFailedError(response.error)
