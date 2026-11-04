@@ -74,7 +74,8 @@ export const mossTranscribePlugin = definePlugin({
                 maxNewTokens: request.maxNewTokens,
                 metadata: true
               },
-              request.requestId
+              request.requestId,
+              request.sessionId
             )
           : transcribe(
               {
@@ -84,7 +85,8 @@ export const mossTranscribePlugin = definePlugin({
                 hotwords: request.hotwords,
                 maxNewTokens: request.maxNewTokens
               },
-              request.requestId
+              request.requestId,
+              request.sessionId
             )
 
         try {

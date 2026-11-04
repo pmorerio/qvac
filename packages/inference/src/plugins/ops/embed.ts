@@ -16,15 +16,25 @@ export interface EmbedResult {
 // Overloaded functions for embedding
 export async function embed(
   params: { modelId: string; text: string },
-  requestId?: string
+  requestId?: string,
+  sessionId?: string
 ): Promise<EmbedResult>
 export async function embed(
   params: { modelId: string; text: string[] },
-  requestId?: string
+  requestId?: string,
+  sessionId?: string
 ): Promise<EmbedResult>
-export async function embed(params: EmbedParams, requestId?: string): Promise<EmbedResult>
+export async function embed(
+  params: EmbedParams,
+  requestId?: string,
+  sessionId?: string
+): Promise<EmbedResult>
 
-export async function embed(params: EmbedParams, requestId?: string): Promise<EmbedResult> {
+export async function embed(
+  params: EmbedParams,
+  requestId?: string,
+  sessionId?: string
+): Promise<EmbedResult> {
   const { modelId, text } = embedParamsSchema.parse(params)
 
   // Open a request-scoped lifecycle. The registry routes
@@ -33,6 +43,7 @@ export async function embed(params: EmbedParams, requestId?: string): Promise<Em
   // id if the caller didn't send one.
   await using ctx = await getRequestRegistry().begin({
     requestId: requestId ?? generateRandomRequestId(),
+    sessionId,
     kind: 'embeddings',
     modelId
   })
@@ -76,11 +87,20 @@ export async function embed(params: EmbedParams, requestId?: string): Promise<Em
   })
 
   const modelStart = nowMs()
-  const response = (await model.run(text)) as unknown as EmbedResponse
-  if (ctx.signal.aborted) {
-    throw new InferenceCancelledError(ctx.requestId)
+  let response: EmbedResponse
+  let rawEmbeddings: Awaited<ReturnType<EmbedResponse['await']>>
+  try {
+    response = (await model.run(text)) as unknown as EmbedResponse
+    if (ctx.signal.aborted) {
+      throw new InferenceCancelledError(ctx.requestId)
+    }
+    rawEmbeddings = await response.await()
+  } catch (error) {
+    // The addon fails the job with its own 'Job cancelled' error once a
+    // cancel lands on it. After an abort that is the expected way out.
+    if (ctx.signal.aborted) throw new InferenceCancelledError(ctx.requestId)
+    throw error
   }
-  const rawEmbeddings = await response.await()
   if (ctx.signal.aborted) {
     throw new InferenceCancelledError(ctx.requestId)
   }

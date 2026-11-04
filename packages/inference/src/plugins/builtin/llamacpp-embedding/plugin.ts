@@ -97,7 +97,8 @@ export const embeddingsPlugin = definePlugin({
             modelId: request.modelId,
             text: request.text
           },
-          request.requestId
+          request.requestId,
+          request.sessionId
         )
 
         return forwardModelExecution(
