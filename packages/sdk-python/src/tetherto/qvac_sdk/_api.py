@@ -197,7 +197,7 @@ def _reject_unknown_config_keys(payload: dict[str, Any], request: Any) -> None:
     if unknown:
         named = ", ".join(repr(key) for key in unknown)
         raise RequestValidationError(
-            f"modelConfig has no {named} for modelType " f"{payload.get('modelType')!r}"
+            f"modelConfig has no {named} for modelType {payload.get('modelType')!r}"
         )
 
 
@@ -608,14 +608,22 @@ async def unload_model(
 
 
 async def invoke_plugin(
-    transport: Transport, model_id: str, handler: str, params: Any = None
+    transport: Transport,
+    model_id: str,
+    handler: str,
+    params: Any = None,
+    *,
+    request_id: str | None = None,
 ) -> Any:
+    """`request_id` is minted when omitted; pass your own to target the invoke
+    with `cancel(request_id=...)`."""
     request = PluginInvokeRequest.model_validate(
         {
             "type": "pluginInvoke",
             "modelId": model_id,
             "handler": handler,
             "params": params,
+            "requestId": request_id or generate_client_request_id(),
         }
     )
     response = PluginInvokeResponse.model_validate(await transport.call(_dump(request)))
@@ -623,7 +631,12 @@ async def invoke_plugin(
 
 
 async def invoke_plugin_stream(
-    transport: Transport, model_id: str, handler: str, params: Any = None
+    transport: Transport,
+    model_id: str,
+    handler: str,
+    params: Any = None,
+    *,
+    request_id: str | None = None,
 ) -> AsyncIterator[Any]:
     request = PluginInvokeStreamRequest.model_validate(
         {
@@ -631,6 +644,7 @@ async def invoke_plugin_stream(
             "modelId": model_id,
             "handler": handler,
             "params": params,
+            "requestId": request_id or generate_client_request_id(),
         }
     )
     async for chunk in transport.call_stream(_dump(request)):
