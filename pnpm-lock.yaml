@@ -871,8 +871,8 @@ importers:
         specifier: ^0.8.1
         version: link:../decoder-audio
       '@qvac/diffusion-cpp':
-        specifier: ^0.31.0
-        version: 0.31.0
+        specifier: ^0.32.0
+        version: 0.32.1
       '@qvac/embed-llamacpp':
         specifier: ^0.53.0
         version: 0.53.1(@qvac/fabric-android-arm64@0.25.0)(@qvac/fabric-ios@0.25.0)(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)
@@ -1615,8 +1615,8 @@ importers:
         specifier: ^0.8.1
         version: link:../decoder-audio
       '@qvac/diffusion-cpp':
-        specifier: ^0.31.0
-        version: 0.31.0
+        specifier: ^0.32.0
+        version: 0.32.1
       '@qvac/embed-llamacpp':
         specifier: ^0.53.0
         version: 0.53.1(@qvac/fabric-android-arm64@0.25.0)(@qvac/fabric-ios@0.25.0)(bare-abort-controller@1.1.2)(bare-buffer@3.6.2)
@@ -4552,12 +4552,12 @@ packages:
   '@qvac/diagnostics@0.1.2':
     resolution: {integrity: sha512-rpNekTUH3uIHPFqRRWcWXEHzW2CZbJJodLfCecVSkzvVXCOm5SLnlP2sxGVTWL7Q/umD68jnTiHMr4h6tP+jUw==}
 
-  '@qvac/diffusion-cpp@0.31.0':
-    resolution: {integrity: sha512-vYY7nPnnSH1S5bvELG5rxs+R2/n5hI79V99Yw6x13FgS4dTrKxaFMQ52fwFLAEJLBSW2n1ZXseV1Ga7qCO7BDA==}
+  '@qvac/diffusion-cpp@0.32.1':
+    resolution: {integrity: sha512-uRCAvi4xbVURL+KSCWM+BKjpP6K4wDG5oeagT/otVbfL90t0i3Supn4S+qROMm3QXmNhbmGlziG1fbgSVnRFsA==}
     engines: {bare: '>=1.24.0'}
     peerDependencies:
-      '@qvac/diffusion-cpp-android-arm64': 0.31.0
-      '@qvac/diffusion-cpp-ios': 0.31.0
+      '@qvac/diffusion-cpp-android-arm64': 0.32.1
+      '@qvac/diffusion-cpp-ios': 0.32.1
     peerDependenciesMeta:
       '@qvac/diffusion-cpp-android-arm64':
         optional: true
@@ -14488,7 +14488,7 @@ snapshots:
       which-runtime: 1.4.0
     optional: true
 
-  '@qvac/diffusion-cpp@0.31.0':
+  '@qvac/diffusion-cpp@0.32.1':
     dependencies:
       '@qvac/infer-base': 0.8.0
       '@qvac/logging': 0.1.1
